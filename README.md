@@ -1,87 +1,44 @@
 # Progressive Audio & Video Streaming from DNA Storage (Biased Raptor Codes)
 
-Tools, configs, and paper artifacts for **progressive retrieval of time-dependent media from DNA** using a **biased Raptor fountain code**. We skew degree-1 probability toward early frames (and mildly boost I-frames) so the peeling decoder resolves useful content sooner, enabling *playback before full retrieval* on a streaming nanopore channel.
+Tools, configs, and paper artifacts for progressive retrieval of time‑dependent media from DNA using a biased Raptor fountain code. We skew degree‑1 probability toward early frames (and mildly boost I‑frames) so the peeling decoder resolves useful content sooner, enabling playback before full retrieval on a streaming nanopore channel.
 
+** Video and Audio Demos will be uploaded shortly (issues with file sizes and type permissions)**
 
 ## Highlights
-- **Frame-aware degree-1 bias** for low-latency starts; optional **I-frame multiplier** for video
-- **Streaming decode** with on-the-fly peeling (belief propagation)
-- **Nanopore channel simulation** via Badread; configurable packets/s and error profiles
-- Reproducible Python env (pip/conda), GitHub Actions CI, and a tidy project layout
+- **Frame‑aware degree‑1 bias** for low‑latency starts; optional **I‑frame multiplier** for video.
+- **Streaming decode** with on‑the‑fly peeling (belief propagation).
+- **Nanopore channel simulation** via Badread; configurable packets/s and error profiles.
+- **Reproducible setup** (pip/conda friendly), CI via GitHub Actions, and a tidy project layout.
 
-## Repo structure
-```
-src/raptor_bias/        # Package stubs to extend
-  ├─ encoder.py         # biased Raptor encoder (implement here)
-  ├─ decoder.py         # peeling decoder (implement here)
-  └─ simulate.py        # CLI entry for streaming simulation
-scripts/
-  └─ run_simulation.py  # Thin wrapper around simulate.py
-config/
-  └─ experiment.yaml    # Example bias + channel settings
-data/{raw,processed}/    # Your inputs/outputs (gitkept)
-figures/                 # Plots & JSON artifacts (gitkept)
-paper/                   # Thesis / paper PDF
-tests/                   # Minimal sanity tests
-```
+## Dependencies
+- CMake
+- Badread
 
-## Installation
-**Conda (recommended)**
+### Install Badread
 ```bash
-mamba env create -f environment.yml
-mamba activate dna-streaming
-pip install -e .
+cd DNA_Streaming
+git clone 'https://github.com/rrwick/Badread'
 ```
-**Pip (virtualenv)**
+
+## Usage
+
+### 1) Encode
 ```bash
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-pip install -e .
+cd NOREC4DNA
+python encode.py data/Audio.bmp   --chunk_size 72   --error_correction reedsolomon   --overhead 0.5   --thr0 0.4   --a 0.01
 ```
 
-## Quick start
-Run a tiny end-to-end simulation stub and write a demo artifact:
+### 2) Sequencing Simulation
 ```bash
-python scripts/run_simulation.py --config config/experiment.yaml --out figures/demo.json
+badread simulate   --reference data/Audio_FASTA.fasta   --quantity 60x   --identity 97,99,1.0 | gzip > reads.fastq.gz
 ```
-Smoke tests:
+
+### 3) Decode
 ```bash
-pytest -q
-python -m raptor_bias.simulate --help
+python decode_timed.py data/Audio_FASTA.ini --badread data/Audio_SIM.fasta
 ```
 
-## Configuration
-Edit `config/experiment.yaml`:
-```yaml
-packets_per_second: 200
-bias:
-  theta0: 0.12        # max degree-1 rate at frame 0
-  alpha: 0.5          # decay across frames
-  iframe_multiplier: 1.2
-  theta_max: 0.5
-```
-Swap in your own bias schedule, error model, or frame weighting. The stub prints a JSON summary; extend it to emit metrics/plots used in the paper.
+---
 
-## Usage patterns
-- **Audio**: encode chunks by time; bias early frames to minimize startup.  
-- **Video**: add a modest **I-frame boost** so dependent frames reconstruct smoothly.  
-- **Channel**: simulate nanopore reads with **Badread** (installed via requirements) to approximate ONT-like indel errors and streaming arrival.
+> **Note:** Paths and filenames above are illustrative and may need to be adapted to your local directory structure and outputs produced by the encode step.
 
-## Reproducing figures
-Place your plotting code under `scripts/` or extend `simulate.py` to emit per-frame recovery curves, startup latency, and overhead. Save outputs in `figures/` and commit small thumbnails if desired.
-
-## Contributing
-PRs welcome—especially for:
-- A reference biased-Raptor encoder/decoder
-- Plotting scripts to reproduce paper figures
-- Adapters for real ONT runs (Fast5/FastQ → packet stream)
-
-## Citation
-Please cite the paper and this repository (see `CITATION.cff`).
-
-## License
-MIT (see `LICENSE`).
-
-## Related & credits
-- **RaptorPJPEG** — progressive JPEG over DNA with on-the-fly error handling; this README’s structure borrows from that project’s clear, pipeline-oriented docs: https://github.com/nawazia/RaptorPJPEG
