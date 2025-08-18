@@ -13,6 +13,7 @@ Tools, configs, and paper artifacts for progressive retrieval of time‑dependen
 ## Dependencies
 - CMake
 - Badread
+- ffmpeg
 
 ### Install Badread
 ```bash
